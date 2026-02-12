@@ -1,0 +1,9 @@
+---
+import Base from '@/layouts/Base.astro';
+import LivingLibrary from '@/components/LivingLibrary';
+---
+
+<Base>
+  <!-- client:load = hydrate immediately on page load (chat needs interactivity) -->
+  <LivingLibrary client:load />
+</Base>
