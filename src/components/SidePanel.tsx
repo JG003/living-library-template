@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { client } from '@/config/client';
+import { fetchContentItems, type ContentItem } from '@/lib/supabase';
 
 const C = client.theme;
 
@@ -11,6 +12,19 @@ interface Props {
 
 export default function SidePanel({ open, onClose, onNewConversation }: Props) {
   const [tab, setTab] = useState<'library' | 'about'>('library');
+  const [items, setItems] = useState<ContentItem[]>([]);
+  const [search, setSearch] = useState('');
+
+  // Fetch content items from Supabase on first open
+  useEffect(() => {
+    if (open && items.length === 0) {
+      fetchContentItems().then(setItems);
+    }
+  }, [open]);
+
+  const filtered = search
+    ? items.filter((it) => it.title.toLowerCase().includes(search.toLowerCase()))
+    : items;
 
   return (
     <>
@@ -128,6 +142,8 @@ export default function SidePanel({ open, onClose, onNewConversation }: Props) {
             <>
               <input
                 placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '9px 14px',
@@ -143,7 +159,12 @@ export default function SidePanel({ open, onClose, onNewConversation }: Props) {
                 }}
               />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {client.contentItems.map((item, i) => (
+                {filtered.length === 0 && (
+                  <div style={{ color: C.dim, fontSize: 12, padding: '10px 0', textAlign: 'center' }}>
+                    {items.length === 0 ? 'Loading...' : 'No results'}
+                  </div>
+                )}
+                {filtered.map((item, i) => (
                   <div
                     key={i}
                     style={{
@@ -207,7 +228,9 @@ export default function SidePanel({ open, onClose, onNewConversation }: Props) {
                   marginBottom: 18,
                 }}
               >
-                <p style={{ color: C.text, fontSize: 13, lineHeight: 1.7, margin: 0 }}>{client.bio}</p>
+                {client.bio.split('\n').filter(Boolean).map((para, i) => (
+                  <p key={i} style={{ color: C.text, fontSize: 13, lineHeight: 1.7, margin: 0, marginBottom: 12 }}>{para}</p>
+                ))}
               </div>
               <span
                 style={{

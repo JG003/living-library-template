@@ -9,8 +9,20 @@ export const client = {
   // ── Identity ──
   name: 'Josh Galt',
   slug: 'josh-galt',
-  tagline: 'Writer · Entrepreneur · Explorer',
-  bio: 'Writer, entrepreneur, explorer. 70+ countries. Founder of BEEGHEE. Host of Bad At My Religion.',
+  tagline: 'Artist · Athlete · Entrepreneur',
+  bio: `Josh Galt is an entrepreneur, explorer, and lifelong student of nature. A former extreme whitewater athlete and sports/lifestyle model (Nike, Adidas, Men's Health), he's spent nearly two decades as a #GlobalNomad — long before hashtags were even a thing — living and working in over 70 countries.
+
+He splits his time between Latin America and Southeast Asia's booming ASEAN region, keeping boots on the ground in as many new places as he can each year.
+
+Josh transitioned from exploring remote, epic whitewater rivers to building brands at the frontier of health, wellness, and sustainability. Today his focus is on bioactive nutrition leading regenerative systems — a vision he calls "Waste to Soil to Superfoods" and is encapsulated in the new hive-fermented™ superfood called BEEGHEE®.
+
+Before this, in 2020 he co-founded Point68 Insect Beauty in partnership with Sibu®, launching the world's first premium cosmetic line based on insect oil. The brand won Best Skincare Product at LOHAS Hong Kong 2021.
+
+Earlier, in 2017, he created Entovegan, an experimental nutrition project demonstrating the power of insects + plants as a sustainable dietary framework. Though no longer actively promoting it, Entovegan has grown into a global movement introducing edible insects to the plant-based community.
+
+And previously, Josh spent over a decade creating, competing in, and directing outdoor adventure sports events. Highlights include serving as Water Director for Primal Quest®, billed as "The World's Most Challenging Human Endurance Competition", directing the first two Riverboarding World Championships, and founding the World Riverboarding Association as its first President.
+
+After 20+ years as a pioneer in the whitewater industry, Josh was named one of "110 Outdoor Ambassadors of the Past 110 Years" by Gear Junkie, joining a list that included many of his own heroes.`,
   siteTitle: 'Josh Galt — Living Library',
   siteDescription:
     'Ask Josh anything. An AI-powered conversational interface trained on his complete body of work.',
@@ -28,16 +40,7 @@ export const client = {
     { label: 'Technology', q: 'What does Josh think about AI and technology?' },
   ],
 
-  // ── Content library items (fetched from Supabase at build time, or hardcoded for MVP) ──
-  contentItems: [
-    { title: 'BAMR Death is Access to Life', type: 'BLOG', date: '2025-12-19' },
-    { title: 'BAMR Who Holds The Truth', type: 'BLOG', date: '2025-12-03' },
-    { title: 'GALTmode → Venturopoly: Christopher Hill', type: 'BLOG', date: '2025-11-06' },
-    { title: 'AI: Less Artificial, More Ancient Intelligence', type: 'BLOG', date: '2025-09-30' },
-    { title: 'GALTmode → What Is Your Price', type: 'BLOG', date: '2025-09-20' },
-    { title: 'POLISHING CHOSEN ALTARS', type: 'BLOG', date: '2025-08-19' },
-    { title: 'Insanity, Delusion, & The Power of Clarity', type: 'BLOG', date: '2025-10-13' },
-  ],
+  // Content items fetched from Supabase at runtime (see lib/supabase.ts)
 
   // ── External links (about panel) ──
   links: [

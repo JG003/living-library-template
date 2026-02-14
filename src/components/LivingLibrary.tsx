@@ -78,33 +78,80 @@ export default function LivingLibrary() {
           padding: '16px 24px',
         }}
       >
-        {/* Nav button */}
-        <button
-          onClick={() => setSidebar(true)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: 8,
-            color: C.dim,
-            transition: 'color 0.25s',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = C.cyan)}
-          onMouseLeave={(e) => (e.currentTarget.style.color = C.dim)}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinecap="round"
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Nav button */}
+          <button
+            onClick={() => setSidebar(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 8,
+              color: C.dim,
+              transition: 'color 0.25s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = C.cyan)}
+            onMouseLeave={(e) => (e.currentTarget.style.color = C.dim)}
           >
-            <polyline points="4,7 10,12 4,17" />
-            <polyline points="12,7 18,12 12,17" />
-          </svg>
-        </button>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            >
+              <polyline points="4,7 10,12 4,17" />
+              <polyline points="12,7 18,12 12,17" />
+            </svg>
+          </button>
+
+          {/* Session reset indicator — only visible during conversation */}
+          {hasChat && (
+            <button
+              onClick={() => {
+                reset();
+                setInput('');
+              }}
+              title="End session"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                border: '1px solid rgba(0,212,255,0.12)',
+                background: 'rgba(0,212,255,0.04)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: 'sessionPulse 3s ease-in-out infinite, fadeIn 0.4s ease-out',
+                transition: 'all 0.25s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(0,212,255,0.4)';
+                e.currentTarget.style.background = 'rgba(0,212,255,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(0,212,255,0.12)';
+                e.currentTarget.style.background = 'rgba(0,212,255,0.04)';
+              }}
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={C.cyan}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              >
+                <path d="M3 12a9 9 0 109-9" />
+                <polyline points="3,3 3,9 9,9" />
+              </svg>
+            </button>
+          )}
+        </div>
 
         {/* Identity */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -126,17 +173,22 @@ export default function LivingLibrary() {
               width: 36,
               height: 36,
               borderRadius: '50%',
+              overflow: 'hidden',
               border: '1px solid rgba(0,212,255,0.15)',
               background: 'linear-gradient(135deg, #12162050, #080c14)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.dim} strokeWidth="1.2">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 21v-1a6 6 0 0112 0v1" />
-            </svg>
+            <img
+              src="/avatar.jpg"
+              alt="Josh Galt"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={(e) => {
+                const el = e.currentTarget;
+                el.style.display = 'none';
+                el.parentElement!.innerHTML =
+                  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a6280" stroke-width="1.2" style="margin:auto;display:block;margin-top:10px"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0112 0v1"/></svg>';
+              }}
+            />
           </div>
         </div>
       </div>
@@ -501,6 +553,45 @@ export default function LivingLibrary() {
       </div>
 
       <SidePanel open={sidebar} onClose={() => setSidebar(false)} onNewConversation={reset} />
+
+      {/* Footer attribution */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: hasChat ? 70 : 12,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          padding: '6px 0',
+          zIndex: 5,
+          pointerEvents: 'none',
+          transition: 'bottom 0.3s ease',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "'JetBrains Mono',monospace",
+            fontSize: 10,
+            color: '#2a3048',
+            pointerEvents: 'auto',
+          }}
+        >
+          Living Library built by{' '}
+          <a
+            href="https://AnabasisIntelligence.com/living-library"
+            target="_blank"
+            style={{
+              color: '#5a6280',
+              textDecoration: 'none',
+              transition: 'color 0.25s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#00d4ff')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#5a6280')}
+          >
+            Anabasis Intelligence
+          </a>
+        </span>
+      </div>
     </div>
   );
 }
