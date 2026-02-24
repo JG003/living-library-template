@@ -34,7 +34,7 @@ export default function LivingLibrary() {
   const startVoice = useCallback(async () => {
     try {
       const conversation = await Conversation.startSession({
-        agentId: import.meta.env.VITE_ELEVENLABS_AGENT_ID,
+        agentId: import.meta.env.PUBLIC_ELEVENLABS_AGENT_ID,
         onConnect: () => {
           setVoiceActive(true);
         },
