@@ -1,10 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Conversation } from '@elevenlabs/client';
 import { client } from '@/config/client';
 import { useChat } from '@/hooks/useChat';
 import HudRings from './HudRings';
 import ChatMessage from './ChatMessage';
 import ThinkingDots from './ThinkingDots';
 import SidePanel from './SidePanel';
+import VoiceSession from './VoiceSession';
 
 const C = client.theme;
 
@@ -12,7 +14,12 @@ export default function LivingLibrary() {
   const { messages, thinking, send, reset } = useChat();
   const [input, setInput] = useState('');
   const [sidebar, setSidebar] = useState(false);
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [voiceTranscripts, setVoiceTranscripts] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
+  const [audioLevel, setAudioLevel] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);
+  const voiceRef = useRef<Conversation | null>(null);
+  const audioTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -24,7 +31,80 @@ export default function LivingLibrary() {
     setInput('');
   };
 
-  const hasChat = messages.length > 0;
+  const startVoice = useCallback(async () => {
+    try {
+      const conversation = await Conversation.startSession({
+        agentId: import.meta.env.VITE_ELEVENLABS_AGENT_ID,
+        onConnect: () => {
+          setVoiceActive(true);
+        },
+        onDisconnect: () => {
+          setVoiceActive(false);
+          setAudioLevel(0);
+          if (audioTimerRef.current) {
+            clearInterval(audioTimerRef.current);
+            audioTimerRef.current = null;
+          }
+        },
+        onMessage: (message) => {
+          setVoiceTranscripts((prev) => [
+            ...prev,
+            {
+              role: message.source === 'user' ? 'user' : 'assistant',
+              text: message.message,
+            },
+          ]);
+        },
+        onError: (error) => {
+          console.error('ElevenLabs error:', error);
+          setVoiceActive(false);
+          setAudioLevel(0);
+          if (audioTimerRef.current) {
+            clearInterval(audioTimerRef.current);
+            audioTimerRef.current = null;
+          }
+        },
+      });
+
+      voiceRef.current = conversation;
+
+      // Poll audio levels from the SDK at ~10fps
+      audioTimerRef.current = setInterval(() => {
+        if (voiceRef.current) {
+          const input = voiceRef.current.getInputVolume();
+          const output = voiceRef.current.getOutputVolume();
+          // Use whichever is louder — input (user speaking) or output (agent speaking)
+          setAudioLevel(Math.max(input, output));
+        }
+      }, 100);
+    } catch (err) {
+      console.error('Failed to start voice session:', err);
+      setVoiceActive(false);
+    }
+  }, []);
+
+  const endVoice = useCallback(async () => {
+    if (audioTimerRef.current) {
+      clearInterval(audioTimerRef.current);
+      audioTimerRef.current = null;
+    }
+    if (voiceRef.current) {
+      await voiceRef.current.endSession();
+      voiceRef.current = null;
+    }
+    setVoiceActive(false);
+    setAudioLevel(0);
+  }, []);
+
+  const resetAll = useCallback(() => {
+    endVoice();
+    reset();
+    setInput('');
+    setVoiceTranscripts([]);
+  }, [endVoice, reset]);
+
+  // Three mutually exclusive views
+  const view = voiceActive ? 'voice' : messages.length > 0 ? 'chat' : 'idle';
 
   return (
     <div
@@ -107,13 +187,10 @@ export default function LivingLibrary() {
             </svg>
           </button>
 
-          {/* Session reset indicator — only visible during conversation */}
-          {hasChat && (
+          {/* Session reset indicator — visible during voice or chat */}
+          {(messages.length > 0 || voiceActive) && (
             <button
-              onClick={() => {
-                reset();
-                setInput('');
-              }}
+              onClick={resetAll}
               title="End session"
               style={{
                 width: 28,
@@ -204,8 +281,8 @@ export default function LivingLibrary() {
           flexDirection: 'column',
         }}
       >
-        {/* ── Initial state: HUD + Voice + Input ── */}
-        {!hasChat && (
+        {/* ── IDLE STATE: HUD + Voice + Input ── */}
+        {view === 'idle' && (
           <div
             style={{
               flex: 1,
@@ -230,8 +307,9 @@ export default function LivingLibrary() {
                   zIndex: 5,
                 }}
               >
-                {/* Voice button — visual placeholder */}
+                {/* Voice button — starts ElevenLabs session */}
                 <button
+                  onClick={startVoice}
                   style={{
                     position: 'relative',
                     width: 88,
@@ -405,8 +483,13 @@ export default function LivingLibrary() {
           </div>
         )}
 
-        {/* ── Conversation state ── */}
-        {hasChat && (
+        {/* ── VOICE SESSION STATE ── */}
+        {view === 'voice' && (
+          <VoiceSession onEnd={endVoice} transcripts={voiceTranscripts} audioLevel={audioLevel} />
+        )}
+
+        {/* ── TEXT CONVERSATION STATE ── */}
+        {view === 'chat' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Messages */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
@@ -419,7 +502,7 @@ export default function LivingLibrary() {
               </div>
             </div>
 
-            {/* Bottom input */}
+            {/* Bottom input — no mic button in chat state */}
             <div
               style={{
                 padding: '12px 24px 20px',
@@ -507,58 +590,19 @@ export default function LivingLibrary() {
                     </svg>
                   </button>
                 </div>
-
-                {/* Mic button (compact, conversation state) */}
-                <button
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%',
-                    flexShrink: 0,
-                    border: '1px solid rgba(0,212,255,0.12)',
-                    background: C.cyanGlow,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(0,212,255,0.3)';
-                    e.currentTarget.style.background = 'rgba(0,212,255,0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(0,212,255,0.12)';
-                    e.currentTarget.style.background = C.cyanGlow;
-                  }}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={C.cyan}
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                  >
-                    <rect x="9" y="1" width="6" height="12" rx="3" />
-                    <path d="M5 10a7 7 0 0014 0" />
-                    <line x1="12" y1="17" x2="12" y2="21" />
-                  </svg>
-                </button>
               </form>
             </div>
           </div>
         )}
       </div>
 
-      <SidePanel open={sidebar} onClose={() => setSidebar(false)} onNewConversation={reset} />
+      <SidePanel open={sidebar} onClose={() => setSidebar(false)} onNewConversation={resetAll} />
 
       {/* Footer attribution */}
       <div
         style={{
           position: 'fixed',
-          bottom: hasChat ? 70 : 12,
+          bottom: view === 'chat' ? 70 : 12,
           left: 0,
           right: 0,
           textAlign: 'center',
